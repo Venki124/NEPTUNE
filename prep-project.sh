@@ -7,9 +7,9 @@ gcloud config set project $(gcloud projects list --format='value(PROJECT_ID)' | 
 # create the neptune dataset and table
 bq mk neptune
 
-bq mk --table --schema message:string $GOOGLE_CLOUD_PROJECT:neptune.rawmessages
-bq mk --table --schema id:string,ipaddress:string,action:string,accountnumber:string,actionid:integer,name:string,actionby:string $GOOGLE_CLOUD_PROJECT:neptune.processed_table
-bq mk --table --schema message:string,error:string $GOOGLE_CLOUD_PROJECT:neptune.error_table
+bq mk --table --schema message:string,ingestion_ts:TIMESTAMP $GOOGLE_CLOUD_PROJECT:neptune.rawmessages
+bq mk --table --schema id:string,ipaddress:string,action:string,accountnumber:string,actionid:integer,name:string,actionby:string,ingestion_ts:TIMESTAMP $GOOGLE_CLOUD_PROJECT:neptune.processed_table
+bq mk --table --schema message:string,error:string,ingestion_ts:TIMESTAMP $GOOGLE_CLOUD_PROJECT:neptune.error_table
 
 # enable event ark and pubsub api
 gcloud services enable eventarc.googleapis.com
