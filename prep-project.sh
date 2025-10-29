@@ -1,3 +1,6 @@
+# set the project
+gcloud config set project $(gcloud projects list --format='value(PROJECT_ID)' | grep playground)
+
 # create the neptune dataset and table
 bq mk neptune
 
