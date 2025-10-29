@@ -5,7 +5,7 @@
 import base64
 import json
 from google.cloud import bigquery
-from util import safe_int, validate_message
+from util import detect_format, safe_int, validate_message
 
 # BigQuery table IDs (Update with your project if needed)
 table_id = "neptune.rawmessages"
@@ -54,15 +54,39 @@ def pubsub_to_bigquery(event, context):
         print(f"Failed to insert into rawmessages: {e}")
         return
 
-    # ---- Step 3: Parse JSON ----
-    try:
+    # ---- Step 3: Parse JSON/CSV ----
+    # try:
+    #     jsonmessage = json.loads(pubsub_message)
+    #     print(f"Parsed JSON message: {jsonmessage}")
+    # except Exception as e:
+    #     print(f"JSON decode error: {e}")
+    #     row_to_insert = [{"message": pubsub_message, "error": str(e)}]
+    #     client.insert_rows_json(error_table, row_to_insert)
+    #     return  # stop processing invalid JSON
+
+    msg_type = detect_format(pubsub_message)
+    if msg_type =='csv':
+        try:
+            parts = [p.strip() for p in pubsub_message.split(",")]
+            expected_count = len(EXPECTED_FIELDS)
+            # Check field count
+            if len(parts) == expected_count:
+                jsonmessage = dict(zip(EXPECTED_FIELDS.keys(), parts))
+                print(f"Converted CSV → JSON dict: {jsonmessage}")
+            else:
+                row_to_insert = [{"message": pubsub_message, "error": str(e)}]
+                client.insert_rows_json(error_table, row_to_insert)
+                return
+        except Exception as e:
+            print(f"CSV decode error: {e}")
+            row_to_insert = [{"message": pubsub_message, "error": str(e)}]
+            client.insert_rows_json(error_table, row_to_insert)
+            return  # stop processing invalid CSV
+        
+    elif msg_type=='json':
         jsonmessage = json.loads(pubsub_message)
         print(f"Parsed JSON message: {jsonmessage}")
-    except Exception as e:
-        print(f"JSON decode error: {e}")
-        row_to_insert = [{"message": pubsub_message, "error": str(e)}]
-        client.insert_rows_json(error_table, row_to_insert)
-        return  # stop processing invalid JSON
+
 
     # ---- Step 4: Validate schema ----
     missing, extra, type_mismatch = validate_message(jsonmessage,EXPECTED_FIELDS)

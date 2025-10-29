@@ -1,3 +1,6 @@
+import json
+
+
 # ---- Utility Functions ----
 
 def safe_int(value):
@@ -24,3 +27,14 @@ def validate_message(msg,EXPECTED_FIELDS):
                 type_mismatch.append(f"{key}: expected {expected_type.__name__}, got {type(msg[key]).__name__}")
 
     return missing, extra, type_mismatch
+
+def detect_format(message: str) -> str:
+    """Detect if message is JSON or CSV."""
+    msg = message.strip()
+    if msg.startswith("{") and msg.endswith("}"):
+        try:
+            json.loads(msg)
+            return "json"
+        except json.JSONDecodeError:
+            return "csv"
+    return "csv"

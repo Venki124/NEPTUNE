@@ -10,9 +10,12 @@ gcloud services enable eventarc.googleapis.com
 gcloud services enable pubsub.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable cloudfunctions.googleapis.com
+gcloud services enable dataflow.googleapis.com
+
+# Create the storage bucket
+gcloud storage buckets create gs://$GOOGLE_CLOUD_PROJECT"-bucket" --soft-delete-duration=0
 
 
-<<COMMENT_BLOCK
 # create the pubsub topics
 gcloud pubsub topics create neptune-activities
 
@@ -21,6 +24,63 @@ gcloud pubsub subscriptions create neptune-activities-test --topic=neptune-activ
 
 #publish a message to topic
 gcloud pubsub topics publish neptune-activites --message='Hello World!'
+
+# Dataflow bridge to get messages from Moonbank to Pluralsight
+
+cat > pipeline.yaml <<EOF
+
+pipeline:
+
+  transforms:
+
+    - name: Source
+
+      type: ReadFromPubSub
+
+      config:
+
+        format: raw
+
+        topic: projects/moonbank-neptune/topics/activities
+
+    - name: Sink
+
+      type: WriteToPubSub
+
+      input: Source
+
+      config:
+
+        format: raw
+
+        topic: projects/${DEVSHELL_PROJECT_ID}/topics/neptune-activities
+
+  windowing:
+
+    type: fixed
+
+    size: 1
+
+options:
+
+  streaming: true
+
+EOF
+
+
+
+gcloud dataflow yaml run neptune --region us-central1 --yaml-pipeline-file=pipeline.yaml
+
+if(( $? > 0 ))
+then 
+  echo "Script failed to trigger the pipeline"
+else
+  echo "creating the Cloud run function"
+  gcloud functions deploy function_pb_bq --gen2 --region=us-central1 --runtime=python312 --trigger-topic=neptune-activities --entry-point=pubsub_to_bigquery --memory=256MB
+fi
+
+
+<<COMMENT_BLOCK
 
 #example json message
 gcloud pubsub topics publish neptune-activities \
