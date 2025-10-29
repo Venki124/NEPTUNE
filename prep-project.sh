@@ -1,3 +1,6 @@
+# project code url
+# git clone https://github.com/Venki124/NEPTUNE.git
+
 # set the project
 gcloud config set project $(gcloud projects list --format='value(PROJECT_ID)' | grep playground)
 
@@ -79,6 +82,8 @@ then
   echo "Script failed to trigger the pipeline"
 else
   echo "creating the Cloud run function"
+  echo "changing directory to build folder"
+  cd ~/NEPTUNE/build
   gcloud functions deploy function_pb_bq --gen2 --region=us-central1 --runtime=python312 --trigger-topic=neptune-activities --entry-point=pubsub_to_bigquery --memory=256MB
 fi
 
