@@ -17,6 +17,7 @@ gcloud services enable pubsub.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable cloudfunctions.googleapis.com
 gcloud services enable dataflow.googleapis.com
+gcloud services enable run.googleapis.com
 
 # Create the storage bucket
 gcloud storage buckets create gs://$GOOGLE_CLOUD_PROJECT"-bucket" --soft-delete-duration=0
@@ -29,7 +30,7 @@ gcloud pubsub topics create neptune-activities
 gcloud pubsub subscriptions create neptune-activities-test --topic=neptune-activities
 
 #publish a message to topic
-gcloud pubsub topics publish neptune-activites --message='Hello World!'
+gcloud pubsub topics publish neptune-activities --message='Hello World!'
 
 # Dataflow bridge to get messages from Moonbank to Pluralsight
 
@@ -84,7 +85,8 @@ else
   echo "creating the Cloud run function"
   echo "changing directory to build folder"
   cd ~/NEPTUNE/build
-  gcloud functions deploy function_pb_bq --gen2 --region=us-central1 --runtime=python312 --trigger-topic=neptune-activities --entry-point=pubsub_to_bigquery --memory=256MB
+  gcloud functions deploy function_pb_bq --gen2 --region=us-central1 --runtime=python312 --trigger-topic=neptune-activities --entry-point=pubsub_to_bigquery --memory=256MB --service-account=$(gcloud iam service-accounts list --filter="EMAIL  ~ compute" --format='value(EMAIL)')
+  # --run-service-account=$(gcloud iam service-accounts list --filter="EMAIL  ~ compute" --format='value(EMAIL)')
 fi
 
 
