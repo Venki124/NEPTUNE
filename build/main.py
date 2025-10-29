@@ -74,7 +74,7 @@ def pubsub_to_bigquery(event, context):
                 jsonmessage = dict(zip(EXPECTED_FIELDS.keys(), parts))
                 print(f"Converted CSV → JSON dict: {jsonmessage}")
             else:
-                row_to_insert = [{"message": pubsub_message, "error":"length of msg not match"}]
+                row_to_insert = [{"message": pubsub_message, "error":"Length Mismatch"}]
                 client.insert_rows_json(error_table, row_to_insert)
                 return
         except Exception as e:
