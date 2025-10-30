@@ -45,7 +45,7 @@ def pubsub_to_bigquery(event, context):
 
     # ---- Step 2: Insert raw message ----
     try:
-        raw_insert = [{'message':pubsub_message,'ingestion_ts': datetime.now(datetime.timezone.utc).isoformat()}]
+        raw_insert = [{'message':pubsub_message,'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
         errors = client.insert_rows(raw_table, raw_insert)
         if not errors:
             print("Raw message inserted into neptune.rawmessages")
@@ -76,13 +76,13 @@ def pubsub_to_bigquery(event, context):
                 print(f"Converted CSV → JSON dict: {jsonmessage}")
             else:
                 row_to_insert = [{"message": pubsub_message, "error":"Length Mismatch",
-                                  'ingestion_ts': datetime.now(datetime.timezone.utc).isoformat()}]
+                                  'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
                 client.insert_rows_json(error_table, row_to_insert)
                 return
         except Exception as e:
             print(f"CSV decode error: {e}")
             row_to_insert = [{"message": pubsub_message, "error": str(e)
-                              ,'ingestion_ts': datetime.now(datetime.timezone.utc).isoformat()}]
+                              ,'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
             client.insert_rows_json(error_table, row_to_insert)
             return  # stop processing invalid CSV
         
@@ -96,7 +96,7 @@ def pubsub_to_bigquery(event, context):
     if missing or type_mismatch:
         print(f"Schema validation failed.\nMissing: {missing}\nExtra: {extra}\nType mismatch: {type_mismatch}")
         row_to_insert = [{"message": pubsub_message, "error": f"Schema error: {missing or type_mismatch}"
-                          ,'ingestion_ts': datetime.now(datetime.timezone.utc).isoformat()}]
+                          ,'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
         client.insert_rows_json(error_table, row_to_insert)
         return  # stop invalid schema
 
@@ -109,7 +109,7 @@ def pubsub_to_bigquery(event, context):
         "actionid": safe_int(jsonmessage.get("actionid")),
         "name": jsonmessage.get("name"),
         "actionby": jsonmessage.get("actionby"),
-        'ingestion_ts': datetime.now(datetime.timezone.utc).isoformat()
+        'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)
     }]
     print(f"Processed row to insert: {row_to_insert}")
 
@@ -123,5 +123,5 @@ def pubsub_to_bigquery(event, context):
     except Exception as e:
         print(f"BigQuery exception during processed_table insert: {e}")
         row_to_insert = [{"message": pubsub_message, "error": str(e),
-                          'ingestion_ts': datetime.now(datetime.timezone.utc).isoformat()}]
+                          'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
         client.insert_rows_json(error_table, row_to_insert)
