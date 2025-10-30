@@ -77,13 +77,13 @@ def pubsub_to_bigquery(event, context):
             else:
                 row_to_insert = [{"message": pubsub_message, "error":"Length Mismatch",
                                   'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
-                client.insert_rows_json(error_table, row_to_insert)
+                client.insert_rows(error_table, row_to_insert)
                 return
         except Exception as e:
             print(f"CSV decode error: {e}")
             row_to_insert = [{"message": pubsub_message, "error": str(e)
                               ,'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
-            client.insert_rows_json(error_table, row_to_insert)
+            client.insert_rows(error_table, row_to_insert)
             return  # stop processing invalid CSV
         
     elif msg_type=='json':
@@ -97,7 +97,7 @@ def pubsub_to_bigquery(event, context):
         print(f"Schema validation failed.\nMissing: {missing}\nExtra: {extra}\nType mismatch: {type_mismatch}")
         row_to_insert = [{"message": pubsub_message, "error": f"Schema error: {missing or type_mismatch}"
                           ,'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
-        client.insert_rows_json(error_table, row_to_insert)
+        client.insert_rows(error_table, row_to_insert)
         return  # stop invalid schema
 
     # ---- Step 5: Prepare valid row for processed_table ----
@@ -115,7 +115,7 @@ def pubsub_to_bigquery(event, context):
 
     # ---- Step 6: Insert validated row into processed_table ----
     try:
-        errors = client.insert_rows_json(processed_table, row_to_insert)
+        errors = client.insert_rows(processed_table, row_to_insert)
         if not errors:
             print(f"Row successfully inserted into neptune.processed_table")
         else:
@@ -124,4 +124,4 @@ def pubsub_to_bigquery(event, context):
         print(f"BigQuery exception during processed_table insert: {e}")
         row_to_insert = [{"message": pubsub_message, "error": str(e),
                           'ingestion_ts': datetime.datetime.now(datetime.timezone.utc)}]
-        client.insert_rows_json(error_table, row_to_insert)
+        client.insert_rows(error_table, row_to_insert)
